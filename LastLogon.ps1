@@ -51,7 +51,7 @@ Import-Module (Join-Path $PSScriptRoot "Modules\Logging.psm1") -Force
 ###   Configure modules   ###
 #############################
 Initialize-MailConfig -TenantId $MailTenantId -ClientId $MailClientId -ClientSecret $MailClientSecret -FromUser $MailFromUser -ToUser $MailAdminMail
-Initialize-Logging -Path $(Join-Path $PSScriptRoot "Logs") -Enabled $LogEnabled
+Initialize-Logging -Path $LogPath -Enabled $LogEnabled
 
 
 #############################
