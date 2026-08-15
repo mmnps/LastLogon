@@ -175,10 +175,19 @@ $Html | Set-Content -Path $OutputPath -Encoding UTF8
 if ($NotifyAdmin -and $MailAdminMail -and $MailTenantId -and $MailClientId -and $MailClientSecret -and $MailFromUser) {
     try {
         $Body = Get-Content (Join-Path $PSScriptRoot "Templates\MailTemplate.html") -Raw -Encoding UTF8
-        Send-GraphMail -Subject "User's last logon report" -Body $Body -AttachmentPath (Join-Path $PSScriptRoot "$(Get-Date -Format "yyyy-MM-dd")_Report.html")
+        Send-GraphMail -Subject "User's last logon report" -Body $Body -AttachmentPath $OutputPath
     }
     catch {
         Write-Log -Level ERROR -Text "An error occurred while sending the email, check the configuration: $($_.Exception.Message)"
+    }
+
+    if (Test-Path $OutputPath) {
+        try {
+            Remove-Item -Path $OutputPath -Force
+        }
+        catch {
+            Write-Log -Level WARN -Text "Could not delete the local report file: $($_.Exception.Message)"
+        }
     }
 }
 else {
