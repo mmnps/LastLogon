@@ -153,9 +153,9 @@ $Rows = foreach ($User in $Users) {
 }
  
  
-############################
-###   Generate HTML     ###
-############################
+#########################
+###   Generate HTML   ###
+#########################
 Write-Log -Level INFO -Text "Creating the report..."
 $TemplatePath = Join-Path $PSScriptRoot "Templates\Dashboard.html"
 $OutputPath   = Join-Path $PSScriptRoot "$(Get-Date -Format "yyyy-MM-dd")_Report.html"
