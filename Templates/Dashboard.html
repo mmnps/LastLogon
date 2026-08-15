@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Last Logon Audit</title>
+<style>
+  :root{
+    --bg:#0B1220;
+    --surface:#121B2E;
+    --surface-alt:#17223A;
+    --border:#24314D;
+    --text:#E8ECF4;
+    --text-muted:#8B98B3;
+    --text-faint:#5A6784;
+    --teal:#2DD4BF;
+    --amber:#F5A623;
+    --red:#EF5B5B;
+    --blue:#5B8DEF;
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(91,141,239,0.10), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    padding:32px 40px 64px;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:20px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:20px;
+    margin-bottom:28px;
+  }
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    font-weight:600;
+    margin:0 0 6px;
+  }
+  h1{
+    margin:0;
+    font-size:26px;
+    font-weight:650;
+    letter-spacing:-0.01em;
+  }
+  .meta{
+    text-align:right;
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--text-muted);
+    line-height:1.6;
+  }
+  .meta b{color:var(--text);font-weight:600;}
+
+  /* ---------- Stat strip ---------- */
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:14px;
+    margin-bottom:14px;
+  }
+  .stat-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px 18px;
+  }
+  .stat-card .label{
+    font-size:10.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-bottom:8px;
+  }
+  .stat-card .value{
+    font-family:var(--mono);
+    font-size:26px;
+    font-weight:600;
+    line-height:1;
+  }
+  .stat-card .sub{
+    margin-top:6px;
+    font-size:11.5px;
+    color:var(--text-faint);
+  }
+  .stat-card.total .value{color:var(--text);}
+  .stat-card.active .value{color:var(--teal);}
+  .stat-card.warning .value{color:#EAD16A;}
+  .stat-card.stale .value{color:var(--amber);}
+  .stat-card.inactive .value{color:var(--red);}
+
+  /* distribution bar — signature element */
+  .distribution{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px 18px 14px;
+    margin-bottom:28px;
+  }
+  .distribution .label{
+    font-size:10.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin-bottom:10px;
+  }
+  .dist-bar{
+    display:flex;
+    height:10px;
+    border-radius:6px;
+    overflow:hidden;
+    background:var(--surface-alt);
+  }
+  .dist-bar span{height:100%;display:block;}
+  .dist-legend{
+    display:flex;
+    gap:22px;
+    margin-top:10px;
+    flex-wrap:wrap;
+    font-size:11.5px;
+    color:var(--text-muted);
+  }
+  .dist-legend .dot{
+    width:8px;height:8px;border-radius:50%;
+    display:inline-block;margin-right:6px;
+  }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  #search{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:13px;
+    padding:9px 14px;
+    width:280px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  #search::placeholder{color:var(--text-faint);}
+  #search:focus{border-color:var(--blue);}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{
+    font-family:var(--mono);
+    font-size:11.5px;
+    letter-spacing:.02em;
+    color:var(--text-muted);
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:6px 13px;
+    cursor:pointer;
+    user-select:none;
+    transition:all .15s ease;
+  }
+  .chip:hover{color:var(--text);border-color:var(--text-faint);}
+  .chip.active{
+    background:rgba(91,141,239,0.15);
+    border-color:var(--blue);
+    color:var(--text);
+  }
+
+  /* ---------- Table ---------- */
+  .table-wrap{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  thead th{
+    text-align:left;
+    font-size:10.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    font-weight:600;
+    padding:12px 16px;
+    background:var(--surface-alt);
+    border-bottom:1px solid var(--border);
+    cursor:pointer;
+    white-space:nowrap;
+    position:relative;
+  }
+  thead th:hover{color:var(--text);}
+  thead th .arrow{opacity:0.4;margin-left:4px;font-size:10px;}
+  thead th.sorted .arrow{opacity:1;color:var(--blue);}
+
+  tbody td{
+    padding:11px 16px;
+    border-bottom:1px solid var(--border);
+    color:var(--text);
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr{transition:background .12s ease;}
+  tbody tr:hover{background:rgba(255,255,255,0.02);}
+  tbody tr.is-hidden{display:none;}
+
+  td.mono, .username{font-family:var(--mono);}
+  .username{color:var(--text);font-weight:500;}
+  .ou{color:var(--text-muted);font-size:12.5px;}
+  .days{font-family:var(--mono);color:var(--text-muted);}
+
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.03em;
+    padding:4px 10px;
+    border-radius:20px;
+    white-space:nowrap;
+  }
+  .status-pill .dot{width:6px;height:6px;border-radius:50%;}
+
+  .status-active{background:rgba(45,212,191,0.12);color:var(--teal);}
+  .status-active .dot{background:var(--teal);}
+  .status-warning{background:rgba(234,209,106,0.12);color:#EAD16A;}
+  .status-warning .dot{background:#EAD16A;}
+  .status-stale{background:rgba(245,166,35,0.12);color:var(--amber);}
+  .status-stale .dot{background:var(--amber);}
+  .status-inactive{background:rgba(239,91,91,0.12);color:var(--red);}
+  .status-inactive .dot{background:var(--red);}
+  .status-never{background:rgba(239,91,91,0.18);color:var(--red);}
+  .status-never .dot{background:var(--red);animation:pulse 1.8s ease-in-out infinite;}
+
+  .empty-state{
+    padding:48px 20px;
+    text-align:center;
+    color:var(--text-faint);
+    font-size:13px;
+    display:none;
+  }
+
+  footer{
+    margin-top:20px;
+    display:flex;
+    justify-content:space-between;
+    color:var(--text-faint);
+    font-family:var(--mono);
+    font-size:11px;
+  }
+
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  @media (max-width:900px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    body{padding:20px;}
+    .meta{text-align:left;}
+    header{flex-direction:column;align-items:flex-start;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .status-never .dot{animation:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <p class="eyebrow">Active Directory Report</p>
+    <h1>Last Logon Audit</h1>
+  </div>
+  <div class="meta">
+    Domain: <b>{{DOMAIN_NAME}}</b><br>
+    Generated: <b>{{GENERATED_DATE}}</b><br>
+    Source host: <b>{{SOURCE_HOST}}</b>
+  </div>
+</header>
+
+<section class="stats">
+  <div class="stat-card total">
+    <div class="label">Total Users</div>
+    <div class="value" id="statTotal">0</div>
+    <div class="sub">accounts scanned</div>
+  </div>
+  <div class="stat-card active">
+    <div class="label">Active</div>
+    <div class="value" id="statActive">0</div>
+    <div class="sub">logged in within 30 days</div>
+  </div>
+  <div class="stat-card warning">
+    <div class="label">Warning</div>
+    <div class="value" id="statWarning">0</div>
+    <div class="sub">31-90 days</div>
+  </div>
+  <div class="stat-card stale">
+    <div class="label">Stale</div>
+    <div class="value" id="statStale">0</div>
+    <div class="sub">91-180 days</div>
+  </div>
+  <div class="stat-card inactive">
+    <div class="label">Inactive / Never</div>
+    <div class="value" id="statInactive">0</div>
+    <div class="sub">&gt; 180 days or never</div>
+  </div>
+</section>
+
+<div class="distribution">
+  <div class="label">Distribution</div>
+  <div class="dist-bar" id="distBar"></div>
+  <div class="dist-legend">
+    <span><span class="dot" style="background:var(--teal)"></span>Active</span>
+    <span><span class="dot" style="background:#EAD16A"></span>Warning</span>
+    <span><span class="dot" style="background:var(--amber)"></span>Stale</span>
+    <span><span class="dot" style="background:var(--red)"></span>Inactive / Never</span>
+  </div>
+</div>
+
+<div class="toolbar">
+  <input type="text" id="search" placeholder="Search username, name, or OU...">
+  <div class="chips" id="chips">
+    <span class="chip active" data-filter="all">All</span>
+    <span class="chip" data-filter="active">Active</span>
+    <span class="chip" data-filter="warning">Warning</span>
+    <span class="chip" data-filter="stale">Stale</span>
+    <span class="chip" data-filter="inactive">Inactive</span>
+    <span class="chip" data-filter="never">Never logged in</span>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table id="userTable">
+    <thead>
+      <tr>
+        <th data-key="username">Username <span class="arrow"></span></th>
+        <th data-key="displayname">Display Name <span class="arrow"></span></th>
+        <th data-key="ou">Organizational Unit <span class="arrow"></span></th>
+        <th data-key="lastlogon">Last Logon <span class="arrow"></span></th>
+        <th data-key="dayssince">Days Since <span class="arrow"></span></th>
+        <th data-key="status">Status <span class="arrow"></span></th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+{{TABLE_ROWS}}
+    </tbody>
+  </table>
+  <div class="empty-state" id="emptyState">No accounts match the current filter.</div>
+</div>
+
+<footer>
+  <span>Last Logon Audit Dashboard</span>
+  <span id="metaCount">0 accounts</span>
+</footer>
+
+<script>
+
+const STATUS_LABEL = {
+  active:"Active", warning:"Warning", stale:"Stale",
+  inactive:"Inactive", never:"Never logged in"
+};
+
+function classify(days){
+  if(days === null || isNaN(days)) return "never";
+  if(days <= 30) return "active";
+  if(days <= 90) return "warning";
+  if(days <= 180) return "stale";
+  return "inactive";
+}
+
+function pillHtml(status){
+  return `<span class="status-pill status-${status}"><span class="dot"></span>${STATUS_LABEL[status]}</span>`;
+}
+
+let sortKey = "dayssince", sortDir = 1, activeFilter = "all", searchTerm = "";
+let rows = [];
+
+function init(){
+  const tbody = document.getElementById("tableBody");
+  rows = Array.from(tbody.querySelectorAll("tr"));
+
+  // classify + paint status pill + stash numeric days for sorting
+  rows.forEach(tr => {
+    const raw = tr.dataset.dayssince;
+    const days = raw === "" || raw === undefined ? null : parseInt(raw, 10);
+    const status = classify(days);
+    tr.dataset.status = status;
+    tr._days = days === null ? Infinity : days;
+    const cell = tr.querySelector(".status-cell");
+    if(cell) cell.innerHTML = pillHtml(status);
+  });
+
+  computeStats();
+  applyFilterAndSearch();
+
+  document.querySelectorAll("thead th").forEach(th => {
+    th.addEventListener("click", () => {
+      const key = th.dataset.key;
+      if(sortKey === key){ sortDir *= -1; } else { sortKey = key; sortDir = 1; }
+      document.querySelectorAll("thead th").forEach(t => t.classList.remove("sorted"));
+      th.classList.add("sorted");
+      sortRows();
+    });
+  });
+
+  document.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeFilter = chip.dataset.filter;
+      applyFilterAndSearch();
+    });
+  });
+
+  document.getElementById("search").addEventListener("input", e => {
+    searchTerm = e.target.value.trim().toLowerCase();
+    applyFilterAndSearch();
+  });
+}
+
+function computeStats(){
+  const counts = { active:0, warning:0, stale:0, inactive:0, never:0 };
+  rows.forEach(tr => counts[tr.dataset.status]++);
+
+  document.getElementById("statTotal").textContent = rows.length;
+  document.getElementById("statActive").textContent = counts.active;
+  document.getElementById("statWarning").textContent = counts.warning;
+  document.getElementById("statStale").textContent = counts.stale;
+  document.getElementById("statInactive").textContent = counts.inactive + counts.never;
+
+  const total = rows.length || 1;
+  document.getElementById("distBar").innerHTML = `
+    <span style="width:${counts.active/total*100}%;background:var(--teal)"></span>
+    <span style="width:${counts.warning/total*100}%;background:#EAD16A"></span>
+    <span style="width:${counts.stale/total*100}%;background:var(--amber)"></span>
+    <span style="width:${(counts.inactive+counts.never)/total*100}%;background:var(--red)"></span>
+  `;
+}
+
+function applyFilterAndSearch(){
+  let visibleCount = 0;
+  rows.forEach(tr => {
+    const matchesFilter = activeFilter === "all" || tr.dataset.status === activeFilter;
+    const haystack = (tr.dataset.username + " " + tr.dataset.displayname + " " + tr.dataset.ou).toLowerCase();
+    const matchesSearch = !searchTerm || haystack.includes(searchTerm);
+    const visible = matchesFilter && matchesSearch;
+    tr.classList.toggle("is-hidden", !visible);
+    if(visible) visibleCount++;
+  });
+  document.getElementById("emptyState").style.display = visibleCount ? "none" : "block";
+  document.getElementById("metaCount").textContent = visibleCount + " account" + (visibleCount===1?"":"s") + " shown";
+}
+
+function sortRows(){
+  const tbody = document.getElementById("tableBody");
+  const sorted = [...rows].sort((a,b) => {
+    let av, bv;
+    if(sortKey === "dayssince"){
+      av = a._days; bv = b._days;
+    } else {
+      av = (a.dataset[sortKey] || "").toLowerCase();
+      bv = (b.dataset[sortKey] || "").toLowerCase();
+    }
+    if(av < bv) return -1 * sortDir;
+    if(av > bv) return  1 * sortDir;
+    return 0;
+  });
+  sorted.forEach(tr => tbody.appendChild(tr));
+  rows = sorted;
+  applyFilterAndSearch();
+}
+
+init();
+</script>
+
+</body>
+</html>
