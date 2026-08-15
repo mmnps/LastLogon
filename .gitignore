@@ -1,2 +1,2 @@
-Config\Config.psd1
-Logs\*.log
+Config/Config.psd1
+Logs/*.log
