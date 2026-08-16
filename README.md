@@ -54,3 +54,8 @@ For regular operation, a daily task in Windows Task Scheduler is recommended.
 - `Config\Config.psd1` is excluded from version control via .gitignore because it can contain secrets.
 - Grant the app registration only the minimally required permission (`Mail.Send`).
 - Prefer providing the client secret via the `LASTLOGON_CLIENT_SECRET` environment variable.
+
+## Changelog
+
+### 16.08.2026
+- Log output and module settings have been adjusted

@@ -7,7 +7,7 @@
     sends an email with an overview to the administrator.
 
 .NOTES
-    Version:        1.0
+    Version:        1.1
     Author:         https://github.com/mmnps
     Requirements:   PowerShell 5.1, Active Directory module
 #>
@@ -138,6 +138,7 @@ $RowTemplate = @"
  
 Write-Log -Level INFO -Text "Getting users..."
 $Rows = foreach ($User in $Users) {
+    Write-Log -Level INFO -Text "Processing $($User.SamAccountName)..."
     $LastLogonDate = if ($User.LastLogon -gt 0) { [DateTime]::FromFileTime($User.LastLogon) } else { $null }
     $DaysSince     = if ($LastLogonDate) { (New-TimeSpan -Start $LastLogonDate -End (Get-Date)).Days } else { $null }
  

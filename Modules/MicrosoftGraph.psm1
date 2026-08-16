@@ -1,10 +1,10 @@
 function Initialize-MailConfig {
     param (
-        [Parameter(Mandatory)][string]$TenantId,
-        [Parameter(Mandatory)][string]$ClientId,
-        [Parameter(Mandatory)][string]$ClientSecret,
-        [Parameter(Mandatory)][string]$FromUser,
-        [Parameter(Mandatory)][string]$ToUser
+        [string]$TenantId,
+        [string]$ClientId,
+        [string]$ClientSecret,
+        [string]$FromUser,
+        [string]$ToUser
     )
 
 
