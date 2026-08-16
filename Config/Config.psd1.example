@@ -1,6 +1,6 @@
 @{
     CheckForUpdates =   $true   # If the script should automatically check for updates
-    NotifyAdmin =       $true   # If you want to receive email notifications when a new version of the script is available
+    NotifyAdmin =       $true   # If you want to receive email notifications of the report or a new version of the script
 
     MailConfig = @{
         TenantId =      ""      # Microsoft Entra TenantId
